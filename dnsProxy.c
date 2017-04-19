@@ -14,8 +14,8 @@
 char lol[MAXLINE];
 typedef struct _data
 {
-	char *address;
-	char *name;
+	char address[100];
+	char name[100];
 }database;
 int listensd,connSD,dnsSD; //Socket descriptors.
 void signalHandler(int sig); //programmer-defined signal handler for Ctrl+C command
@@ -27,23 +27,27 @@ short cur;
 void queueInit(void)
 {
 	domain=(database *)malloc(3*sizeof(database)); //allocates memory for database
-	domain[0].name="----||||----";
-	domain[0].address="----||||----";
-	domain[1].name="----||||----";
-	domain[1].address="----||||----";
-	domain[2].name="----||||----";
-	domain[2].address="----||||----";
+	sprintf(domain[0].name,"----||||----");
+	sprintf(domain[0].address,"----||||----");
+sprintf(domain[1].name,"----||||----");
+sprintf(domain[1].address,"----||||----");
+sprintf(domain[2].name,"----||||----");
+sprintf(domain[2].address,"----||||----");
 	cur=0;
 }
-
+	char temp[100],temp2[100];
 int dnsSearch(char** a,int x)
-{ 		memset(lol,0,MAXLINE);
+{
+	memset(temp,0,100);
+	sprintf(temp,"%s",*a);
+	printf("%s\n", temp);
+	memset(lol,0,MAXLINE);
 	if(x==1){
-	if(strcmp(domain[0].name,*a)==0) { sprintf(lol,"%s",domain[0].address);return 1;}
+	if(strcmp(domain[0].name,*a)==0) { sprintf(lol,"%s",domain[0].address); printf("%s",domain[0].address);return 1;}
 	if(strcmp(domain[1].name,*a)==0) { sprintf(lol,"%s",domain[1].address);return 1;}
 	if(strcmp(domain[2].name,*a)==0) { sprintf(lol,"%s",domain[2].address);return 1;}}
 	if(x==2){
-		if(strcmp(domain[0].address,*a)==0) { sprintf(lol,"%s",domain[0].name);return 1;}
+		if(strcmp(domain[0].address,*a)==0) { sprintf(lol,"%s",domain[0].name);printf("%s\n",domain[0].name);return 1;}
 		if(strcmp(domain[1].address,*a)==0) { sprintf(lol,"%s",domain[1].name);return 1;}
 		if(strcmp(domain[2].address,*a)==0) { sprintf(lol,"%s",domain[2].name);return 1;}
 	}
@@ -72,14 +76,25 @@ int dnsSearch(char** a,int x)
 	{
 		token=strtok(recvBuffer,de);
 		token=strtok(NULL,de);
-
 		if(x==1)
-		{domain[cur].name=*a;
-		domain[cur].address=token;}
-		if(x==2){
-			domain[cur].address=*a;
-			domain[cur].name=token;
+		{
+			sprintf(domain[cur].name,"%s",temp);
+			//domain[cur].name=temp;
+		memset(temp2,0,100);
+		sprintf(temp2,"%s",token);
+		sprintf(domain[cur].address,"%s",temp2);
 		}
+		if(x==2){
+			sprintf(domain[cur].address,"%s",temp);
+			//domain[cur].address=temp;
+			memset(temp2,0,100);
+			sprintf(temp2,"%s",token);
+			sprintf(domain[cur].name,"%s",temp2);
+
+		}
+
+
+		printf("New entry pushed to Queue\n");
 		cur=(cur+1)%3;
 		sprintf(lol,"%s",token);
 		 return 1;
@@ -94,7 +109,9 @@ void signalHandler(int sig)
 	// printf("Server terminating!..\n");
 	sprintf(msg,"----||||----");
 	send(connSD,msg,MAXLINE,0);
+	send(dnsSD,msg,MAXLINE,0);
 	close(connSD);
+	close(dnsSD);
 	exit(0);
 }
 
@@ -130,20 +147,27 @@ void childprocess(int connSD,int id)
 
 	if(buffer[0]-'0'==1) flag=dnsSearch(&name,1);
 	else if (buffer[0]-'0'==2) flag=dnsSearch(&name,2);
-	else signalHandler(1);
+	else
+	{	sprintf(msg,"Invalid Format");
+		send(connSD,msg,MAXLINE,0);
+		 return;
+	}
+
 
 	if(flag==0)
 	{
 		sprintf(msg,"4$Entry not found in the database");
 		send(connSD,msg,MAXLINE,0);
-		signalHandler(1);
+		close(connSD);
+		return;
 	}
 	else if(flag==1)
 	{
 		if (token!= NULL) sprintf(msg,"3$%s/%s",lol,token);
 		else sprintf(msg,"3$%s",lol);
 		send(connSD,msg,MAXLINE,0);
-		signalHandler(1);
+		close(connSD);
+		return;
 	}
 }
 
@@ -190,14 +214,8 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-		if((fork())==0)
-		{
-			close(listensd); //Allowing only one socket to listen by closing child process' listensd.
-			// printf("\nRequest from %s servcied with child process %d\n",inet_ntoa(CliAddr.sin_addr) ,getpid());
-			childprocess(connSD,getpid()); //A Child Process for a connection.
-			close(connSD); //Child closes its version of connSD after transaction is completed.
-			exit(0); //Child terminates.
-		}
-		close(connSD); //Parent looks for more connections by closing the connSD.
+     childprocess(connSD,getpid());
+
+
 	}
 }

@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
 
 	signal(SIGINT,signalHandler);
 	//printf("\n Connection established :\n ");
-	commandHandler(sockfd);
+	
+	{commandHandler(sockfd);}
 	return 0;
 }

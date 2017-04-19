@@ -68,7 +68,7 @@ void signalHandler(int sig)
 	char msg[MAXLINE];
 	close(listensd);
 	// printf("Server terminating!..\n");
-	sprintf(msg,"Server terminated!\n");
+	sprintf(msg,"----||||----");
 	send(connSD,msg,MAXLINE,0);
 	close(connSD);
 	exit(0);
