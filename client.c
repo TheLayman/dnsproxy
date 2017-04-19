@@ -26,6 +26,7 @@ void signalHandler(int sig)
 
 void commandHandler(int sockfd)
 {
+	printf("Command Format: 1$domainname (or) 2$ipaddr\n" );
 	char sendBuffer[MAXLINE],recvBuffer[MAXLINE];
 	memset(sendBuffer,0,MAXLINE);
 	memset(recvBuffer,0,MAXLINE);

@@ -11,7 +11,7 @@
 #include<ctype.h>
 #include <math.h>
 #define MAXLINE 100
-
+char lol[MAXLINE];
 typedef struct _data
 {
 	char *address;
@@ -23,23 +23,30 @@ void databaseInit(); //creates database
 int findUPC(int); //searches and returns item_code supplied in the database and returns accordingly
 void childprocess(int,int);
 database *domain ; //Item-Name-Price list.
-
+short cur;
 void queueInit(void)
 {
 	domain=(database *)malloc(3*sizeof(database)); //allocates memory for database
-	domain[0].name="sujay.com";
-	domain[0].address="10.0.1.42";
-	domain[1].name="pussy.bodd";
-	domain[1].address="10.0.1.73";
-	domain[2].name="komu.gay";
-	domain[2].address="10.0.1.75";
+	domain[0].name="----||||----";
+	domain[0].address="----||||----";
+	domain[1].name="----||||----";
+	domain[1].address="----||||----";
+	domain[2].name="----||||----";
+	domain[2].address="----||||----";
+	cur=0;
 }
 
-int dnsSearch(char** a)
-{
-	if(strcmp(domain[0].name,*a)==0) { *a=domain[0].address;return 1;}
-	if(strcmp(domain[1].name,*a)==0) { *a=domain[1].address;return 1;}
-	if(strcmp(domain[2].name,*a)==0) { *a=domain[2].address;return 1;}
+int dnsSearch(char** a,int x)
+{ 		memset(lol,0,MAXLINE);
+	if(x==1){
+	if(strcmp(domain[0].name,*a)==0) { sprintf(lol,"%s",domain[0].address);return 1;}
+	if(strcmp(domain[1].name,*a)==0) { sprintf(lol,"%s",domain[1].address);return 1;}
+	if(strcmp(domain[2].name,*a)==0) { sprintf(lol,"%s",domain[2].address);return 1;}}
+	if(x==2){
+		if(strcmp(domain[0].address,*a)==0) { sprintf(lol,"%s",domain[0].name);return 1;}
+		if(strcmp(domain[1].address,*a)==0) { sprintf(lol,"%s",domain[1].name);return 1;}
+		if(strcmp(domain[2].address,*a)==0) { sprintf(lol,"%s",domain[2].name);return 1;}
+	}
 	struct sockaddr_in ServAddr;
 	dnsSD=socket(AF_INET,SOCK_STREAM,0); //socket(internet_family,socket_type,protocol_value) retruns socket descriptor
 	if(dnsSD<0)
@@ -53,12 +60,30 @@ int dnsSearch(char** a)
 	{
 		return 0;
 	}
-	char recvBuffer[MAXLINE], *token;
+	char recvBuffer[MAXLINE], *token,sendBuffer[MAXLINE];
+	const char de[2]="$";
 	memset(recvBuffer,0,MAXLINE);
-	send(dnsSD,*a,MAXLINE,0);
+	memset(sendBuffer,0,MAXLINE);
+	sprintf(sendBuffer,"%d$%s",x,*a);
+	send(dnsSD,sendBuffer,MAXLINE,0);
 	recv(dnsSD,recvBuffer,MAXLINE,0);
-	*a=recvBuffer;
-	return 1;
+	if(recvBuffer[0]-'0'==4) return 0;
+	else if (recvBuffer[0]-'0'==3)
+	{
+		token=strtok(recvBuffer,de);
+		token=strtok(NULL,de);
+
+		if(x==1)
+		{domain[cur].name=*a;
+		domain[cur].address=token;}
+		if(x==2){
+			domain[cur].address=*a;
+			domain[cur].name=token;
+		}
+		cur=(cur+1)%3;
+		sprintf(lol,"%s",token);
+		 return 1;
+	}
 }
 
 
@@ -67,7 +92,7 @@ void signalHandler(int sig)
 	char msg[MAXLINE];
 	close(listensd);
 	// printf("Server terminating!..\n");
-	sprintf(msg,"Server terminated!\n");
+	sprintf(msg,"----||||----");
 	send(connSD,msg,MAXLINE,0);
 	close(connSD);
 	exit(0);
@@ -77,8 +102,8 @@ void childprocess(int connSD,int id)
 {
 	int len,flag;
 	double total=0.0;
-	char buffer[MAXLINE],msg[MAXLINE],*name,*token;
-	const char delim[2]="/";
+	char buffer[MAXLINE],msg[MAXLINE],*name,*token,*temp;
+	const char delim[2]="/", de[2]="$";
 	len=0;
 	memset(msg,0,MAXLINE); //clears contents of msg
 	len=recv(connSD,buffer,MAXLINE,0);
@@ -95,19 +120,28 @@ void childprocess(int connSD,int id)
 		close(connSD);
 		exit(0);
 	}
-	token=strtok(buffer,delim);
+	token=strtok(buffer,de);
+	token=strtok(NULL,de);
+	temp=token;
+
+	token=strtok(temp,delim);
 	name=token;
 	token=strtok(NULL,delim);
-	flag=dnsSearch(&name);
+
+	if(buffer[0]-'0'==1) flag=dnsSearch(&name,1);
+	else if (buffer[0]-'0'==2) flag=dnsSearch(&name,2);
+	else signalHandler(1);
+
 	if(flag==0)
 	{
-		sprintf(msg,"Entry not found in the database");
+		sprintf(msg,"4$Entry not found in the database");
 		send(connSD,msg,MAXLINE,0);
 		signalHandler(1);
 	}
 	else if(flag==1)
 	{
-		sprintf(msg,"%s/%s",name,token);
+		if (token!= NULL) sprintf(msg,"3$%s/%s",lol,token);
+		else sprintf(msg,"3$%s",lol);
 		send(connSD,msg,MAXLINE,0);
 		signalHandler(1);
 	}

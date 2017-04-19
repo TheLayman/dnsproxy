@@ -51,13 +51,16 @@ void databaseInit(char *file_name)
 }
 
 int dnsSearch(char** a)
-{	
-	if(strcmp(domain[0].name,*a)==0) { *a=domain[0].address;return 1;}
-	if(strcmp(domain[1].name,*a)==0) { *a=domain[1].address;return 1;}
-	if(strcmp(domain[2].name,*a)==0) { *a=domain[2].address;return 1;}
-	if(strcmp(domain[3].name,*a)==0) { *a=domain[3].address;return 1;}
-	if(strcmp(domain[4].name,*a)==0) { *a=domain[4].address;return 1;}
-	if(strcmp(domain[5].name,*a)==0) { *a=domain[5].address;return 1;}
+{
+	int cnt;
+	for(cnt=0;cnt<records;cnt++) {if(strcmp(domain[cnt].name,*a)==0) { *a=domain[cnt].address;return 1;}}
+	return 0;
+}
+
+int ipSearch(char **a)
+{
+	int cnt;
+	for(cnt=0;cnt<records;cnt++) {if(strcmp(domain[cnt].address,*a)==0) { *a=domain[cnt].name;return 1;}}
 	return 0;
 }
 void signalHandler(int sig)
@@ -76,7 +79,7 @@ void childprocess(int connSD,int id)
 	int len,flag;
 	double total=0.0;
 	char buffer[MAXLINE],msg[MAXLINE],*name,*token;
-	const char delim[2]=" ";
+	const char delim[2]="$";
 	len=0;
 	memset(msg,0,MAXLINE); //clears contents of msg
 	len=recv(connSD,buffer,MAXLINE,0);
@@ -94,16 +97,18 @@ void childprocess(int connSD,int id)
 		exit(0);
 	}
 	token=strtok(buffer,delim);
-	flag=dnsSearch(&token);
+	token=strtok(NULL,delim);
+	if(buffer[0]-'0'==1) flag=dnsSearch(&token);
+	if(buffer[0]-'0'==2) flag=ipSearch(&token);
 	if(flag==0)
 	{
-		sprintf(msg,"Entry not found in the database");
+		sprintf(msg,"4$Entry not found in the database");
 		send(connSD,msg,MAXLINE,0);
 		signalHandler(1);
 	}
 	else if(flag==1)
 	{
-		sprintf(msg,"%s",token);
+		sprintf(msg,"3$%s",token);
 		send(connSD,msg,MAXLINE,0);
 		signalHandler(1);
 	}
