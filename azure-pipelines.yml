@@ -1,0 +1,11 @@
+
+pool: default
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.BinariesDirectory)'
+    ArtifactName: 'github'
+    publishLocation: 'Container'
