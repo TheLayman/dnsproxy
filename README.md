@@ -1,4 +1,2 @@
 # dnsproxy
 DNS Proxy
-
-
