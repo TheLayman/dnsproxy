@@ -1,11 +1,9 @@
 
-pool: default
-
+pool:
+  vmImage: 'ubuntu-latest'
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-# - task: PublishBuildArtifacts@1
-#   inputs:
-#     PathtoPublish: '$(Build.SourcesDirectory)'
-#     ArtifactName: 'github'
-#     publishLocation: 'Container'
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.SourcesDirectory)'
+    ArtifactName: 'github'
+    publishLocation: 'Container'
